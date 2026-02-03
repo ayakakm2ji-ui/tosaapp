@@ -1,1 +1,53 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>かんたんカウンター</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      margin-top: 50px;
+    }
+    button {
+      font-size: 20px;
+      margin: 5px;
+      padding: 10px 20px;
+    }
+    #count {
+      font-size: 40px;
+      margin: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>かんたんカウンター</h1>
+  <div id="count">0</div>
+
+  <button onclick="increase()">＋</button>
+  <button onclick="decrease()">−</button>
+  <button onclick="reset()">リセット</button>
+
+  <script>
+    let count = 0;
+
+    function increase() {
+      count++;
+      document.getElementById("count").textContent = count;
+    }
+
+    function decrease() {
+      count--;
+      document.getElementById("count").textContent = count;
+    }
+
+    function reset() {
+      count = 0;
+      document.getElementById("count").textContent = count;
+    }
+  </script>
+
+</body>
+</html>
 
