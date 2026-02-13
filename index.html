@@ -2,8 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>感情作曲アプリ 安定版</title>
-
+<title>標準語→土佐弁 翻訳</title>
 <style>
 body{
   margin:0;
@@ -12,158 +11,87 @@ body{
   justify-content:center;
   align-items:center;
   font-family:sans-serif;
-  transition: background 2s ease;
-  background:#222;
+  background:linear-gradient(135deg,#1e3c72,#2a5298);
   color:white;
 }
 
 .app{
-  text-align:center;
   background:rgba(0,0,0,0.4);
   padding:40px;
   border-radius:20px;
   width:500px;
+  text-align:center;
 }
 
 textarea{
   width:100%;
   height:120px;
-  font-size:16px;
   padding:10px;
   border-radius:10px;
   border:none;
+  font-size:16px;
   margin-bottom:15px;
 }
 
 button{
-  font-size:18px;
   padding:10px 20px;
+  font-size:16px;
   border:none;
   border-radius:10px;
   cursor:pointer;
 }
 
-#mood{
-  margin-top:15px;
+#output{
+  margin-top:20px;
   font-size:18px;
+  background:rgba(255,255,255,0.2);
+  padding:15px;
+  border-radius:10px;
 }
 </style>
 </head>
 <body>
 
 <div class="app">
-  <h2>🎵 フルバイブ感情作曲</h2>
-  <textarea id="lyrics" placeholder="楽しい！悲しい…など入力"></textarea>
-  <button id="compose">作曲スタート</button>
-  <div id="mood"></div>
+  <h2>🌊 標準語 → 土佐弁 翻訳</h2>
+  <textarea id="input" placeholder="標準語を入力してください"></textarea>
+  <button onclick="translateText()">翻訳する</button>
+  <div id="output"></div>
 </div>
 
 <script>
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function translateText(){
+  let text = document.getElementById("input").value;
 
-// 感情判定
-function detectEmotion(text){
-  if(text.includes("怒") || text.includes("ムカ") || text.includes("最悪")) return "anger";
-  if(text.includes("悲") || text.includes("寂") || text.includes("涙")) return "sad";
-  if(text.includes("静") || text.includes("落ち着")) return "calm";
-  if(text.includes("楽") || text.includes("嬉") || text.includes("幸せ")) return "joy";
-  return "neutral";
-}
+  const dictionary = {
+    "です": "き",
+    "でした":"やったわ",
+    "面白い":"おもろい",
+    "おもしろい":"おもろい",
+    "だよ": "がよ",
+    "だね": "やね",
+    "している": "しゆう",
+    "してる": "しゆう",
+    "して": "しちょる",
+    "行く": "行くき",
+    "来る": "来るき",
+    "だから": "やき",
+    "とても": "めっちゃ",
+    "本当に": "ほんまに",
+    "ほんとに":"ほんまに",
+    "だ": "や",
+    "ない": "ないき",
+    "か？":"が？",
+    "ダメ":"いかん",
+    "":"",,,
+  };
 
-// 背景設定
-function setBackground(emotion){
-  switch(emotion){
-    case "joy":
-      document.body.style.background="linear-gradient(135deg,#ffe259,#ffa751)";
-      break;
-    case "anger":
-      document.body.style.background="linear-gradient(135deg,#ff4e50,#f9d423)";
-      break;
-    case "sad":
-      document.body.style.background="linear-gradient(135deg,#2c3e50,#4b6cb7)";
-      break;
-    case "calm":
-      document.body.style.background="linear-gradient(135deg,#a1c4fd,#c2e9fb)";
-      break;
-    default:
-      document.body.style.background="#333";
+  for(const key in dictionary){
+    text = text.split(key).join(dictionary[key]);
   }
+
+  document.getElementById("output").textContent = text;
 }
-
-// 音を鳴らす
-async function playMusic(text, emotion){
-  await audioCtx.resume();
-
-  let time = audioCtx.currentTime;
-
-  for(let i=0; i<text.length; i++){
-
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-
-    let baseFreq = 220;
-    let duration = 0.3;
-
-    // 感情で変化
-    switch(emotion){
-      case "joy":
-        baseFreq = 400;
-        duration = 0.22;
-        break;
-      case "anger":
-        baseFreq = 350;
-        duration = 0.18;
-        osc.type="sawtooth";
-        break;
-      case "sad":
-        baseFreq = 180;
-        duration = 0.45;
-        break;
-      case "calm":
-        baseFreq = 260;
-        duration = 0.35;
-        break;
-    }
-
-    // サビ強調（！が近くにあるとき）
-    if(text.slice(Math.max(0,i-3), i+1).includes("！")){
-      baseFreq += 150;
-      duration *= 0.6;
-    }
-
-    const note = text.charCodeAt(i) % 7;
-    osc.frequency.value = baseFreq * Math.pow(2, note/7);
-
-    gain.gain.setValueAtTime(0.15, time);
-
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-
-    osc.start(time);
-    osc.stop(time + duration);
-
-    time += duration;
-  }
-}
-
-// ボタン処理
-document.getElementById("compose").addEventListener("click", async ()=>{
-
-  const text = document.getElementById("lyrics").value;
-  if(text.length === 0) return;
-
-  const emotion = detectEmotion(text);
-
-  document.getElementById("mood").textContent =
-    emotion==="joy" ? "🌈 喜びの曲" :
-    emotion==="anger" ? "🔥 怒りの曲" :
-    emotion==="sad" ? "🌙 哀の曲" :
-    emotion==="calm" ? "🌊 静かな曲" :
-    "😐 通常モード";
-
-  setBackground(emotion);
-  playMusic(text, emotion);
-});
 </script>
 
 </body>
