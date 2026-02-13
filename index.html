@@ -2,269 +2,167 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>フルバイブ感情作曲アプリ（UI強化版）</title>
-<style>
-body {
-  margin: 0;
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-family: sans-serif;
-  transition: background 2s ease;
-}
-.app {
-  text-align: center;
-  background: rgba(0,0,0,0.3);
-  padding: 40px;
-  border-radius: 20px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-  color: white;
-  max-width: 900px;
-}
-textarea{
-  width: 60%;
-  min-height:150px;
-  font-size:16px;
-  padding:12px;
-  border-radius:12px;
-  border:none;
-  background: rgba(255,255,255,0.2);
-  color:white;
-  margin-bottom:20px;
-  resize:none;
-}
-.emotion-bars{
-  display:flex;
-  flex-direction:column;
-  margin:10px auto 20px;
-  width:60%;
-}
-.bar{
-  display:flex;
-  align-items:center;
-  margin:4px 0;
-}
-.bar span{
-  width:30px;
-  text-align:center;
-}
-.fill{
-  flex:1;
-  height:16px;
-  background: rgba(255,255,255,0.3);
-  border-radius:8px;
-  margin-left:8px;
-  position:relative;
-}
-.fill::after{
-  content:'';
-  position:absolute;
-  left:0; top:0;
-  height:100%;
-  width:0%;
-  background-color:currentColor;
-  border-radius:8px;
-  transition: width 0.5s ease;
-}
-.bar.joy{ color:#ffe259; }
-.bar.anger{ color:#ff4e50; }
-.bar.sad{ color:#4b6cb7; }
-.bar.calm{ color:#a1c4fd; }
+<title>感情作曲アプリ 安定版</title>
 
-.buttons{
-  margin-top:20px;
+<style>
+body{
+  margin:0;
+  height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-family:sans-serif;
+  transition: background 2s ease;
+  background:#222;
+  color:white;
 }
+
+.app{
+  text-align:center;
+  background:rgba(0,0,0,0.4);
+  padding:40px;
+  border-radius:20px;
+  width:500px;
+}
+
+textarea{
+  width:100%;
+  height:120px;
+  font-size:16px;
+  padding:10px;
+  border-radius:10px;
+  border:none;
+  margin-bottom:15px;
+}
+
 button{
   font-size:18px;
-  padding:12px 28px;
-  margin:0 8px;
+  padding:10px 20px;
   border:none;
-  border-radius:12px;
+  border-radius:10px;
   cursor:pointer;
-  transition: transform 0.2s;
 }
-button:hover{ transform:scale(1.05); }
 
-#modeToggle{
-  margin-left:8px;
-  background:white;
-  color:#1a2a6c;
+#mood{
+  margin-top:15px;
+  font-size:18px;
 }
 </style>
 </head>
 <body>
 
 <div class="app">
-  <h1>🎶 フルバイブ感情作曲メーカー</h1>
-  
-  <textarea id="lyrics" placeholder="歌詞を入力してね"></textarea>
-
-  <div class="emotion-bars">
-    <div class="bar joy"><span>喜</span><div class="fill" id="joy-bar"></div></div>
-    <div class="bar anger"><span>怒</span><div class="fill" id="anger-bar"></div></div>
-    <div class="bar sad"><span>哀</span><div class="fill" id="sad-bar"></div></div>
-    <div class="bar calm"><span>静</span><div class="fill" id="calm-bar"></div></div>
-  </div>
-
-  <div class="buttons">
-    <button id="compose">🎵 作曲スタート</button>
-    <button id="reset">🔄 リセット</button>
-    <button id="modeToggle">💥 サビ強調ON</button>
-  </div>
-
+  <h2>🎵 フルバイブ感情作曲</h2>
+  <textarea id="lyrics" placeholder="楽しい！悲しい…など入力"></textarea>
+  <button id="compose">作曲スタート</button>
   <div id="mood"></div>
 </div>
 
 <script>
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-// サビ強調ON/OFF
-let highlightEnabled = true;
-document.getElementById("modeToggle").addEventListener("click",()=>{
-  highlightEnabled=!highlightEnabled;
-  document.getElementById("modeToggle").textContent = highlightEnabled ? "💥 サビ強調ON" : "⚡ サビ強調OFF";
-});
+// 感情判定
+function detectEmotion(text){
+  if(text.includes("怒") || text.includes("ムカ") || text.includes("最悪")) return "anger";
+  if(text.includes("悲") || text.includes("寂") || text.includes("涙")) return "sad";
+  if(text.includes("静") || text.includes("落ち着")) return "calm";
+  if(text.includes("楽") || text.includes("嬉") || text.includes("幸せ")) return "joy";
+  return "neutral";
+}
 
-// 感情語彙（喜怒哀静×5段階）
-const emotionWords = {
-  joy: {
-    veryHigh: ["最高","爆笑","大興奮","超楽しい","ハッピー爆発"],
-    high:     ["楽しい","嬉しい","ワクワク","テンション","幸せ"],
-    medium:   ["元気","明るい","笑顔","進む","前向き"],
-    low:      ["小さな喜び","ほっこり","嬉しめ","にこにこ"],
-    veryLow:  ["少し楽しい","微笑む","まあまあ"]
-  },
-  anger: {
-    veryHigh: ["激怒","最悪","殺意","怒り爆発","許せない"],
-    high:     ["怒","腹立つ","ムカつく","悔しい","不満"],
-    medium:   ["イライラ","苛立つ","もやもや","やや不満"],
-    low:      ["少し不満","ちょい怒","気になる"],
-    veryLow:  ["少しイライラ","むむむ"]
-  },
-  sad: {
-    veryHigh: ["絶望","泣き崩れる","悲惨","孤独感MAX","涙止まらない"],
-    high:     ["悲しい","寂しい","つらい","切ない","嫌"],
-    medium:   ["落ち込む","しょんぼり","哀しい","少し泣く"],
-    low:      ["少し寂しい","ちょっと悲しい","沈む"],
-    veryLow:  ["まあまあ悲しい","微妙に寂しい"]
-  },
-  calm: {
-    veryHigh: ["平和","極めて穏やか","安らぎMAX","瞑想","静寂"],
-    high:     ["静か","落ち着く","安心","ゆったり","穏やか"],
-    medium:   ["少し落ち着く","静め","心地よい"],
-    low:      ["ちょっと穏やか","やや落ち着く"],
-    veryLow:  ["少し静か","微妙に落ち着く"]
+// 背景設定
+function setBackground(emotion){
+  switch(emotion){
+    case "joy":
+      document.body.style.background="linear-gradient(135deg,#ffe259,#ffa751)";
+      break;
+    case "anger":
+      document.body.style.background="linear-gradient(135deg,#ff4e50,#f9d423)";
+      break;
+    case "sad":
+      document.body.style.background="linear-gradient(135deg,#2c3e50,#4b6cb7)";
+      break;
+    case "calm":
+      document.body.style.background="linear-gradient(135deg,#a1c4fd,#c2e9fb)";
+      break;
+    default:
+      document.body.style.background="#333";
   }
-};
-
-// 背景グラデーション
-const backgrounds = {
-  joy: { veryHigh: "linear-gradient(135deg,#ffe259,#ffa751)", high:"linear-gradient(135deg,#fff7a1,#ffcf5b)", medium:"linear-gradient(135deg,#fef3c7,#fde68a)", low:"linear-gradient(135deg,#fff9e5,#fff2cc)", veryLow:"linear-gradient(135deg,#fffdf0,#fffaf0)" },
-  anger:{ veryHigh:"linear-gradient(135deg,#ff4e50,#f9d423)", high:"linear-gradient(135deg,#ff6b6b,#ff9f43)", medium:"linear-gradient(135deg,#ff7f50,#ffa07a)", low:"linear-gradient(135deg,#ff8c69,#ffb6a0)", veryLow:"linear-gradient(135deg,#ffc0b3,#ffd9c0)" },
-  sad:  { veryHigh:"linear-gradient(135deg,#232526,#414345)", high:"linear-gradient(135deg,#2c3e50,#4b6cb7)", medium:"linear-gradient(135deg,#34495e,#5d6d7e)", low:"linear-gradient(135deg,#5f6d7a,#7f8c8d)", veryLow:"linear-gradient(135deg,#95a5a6,#bdc3c7)" },
-  calm: { veryHigh:"linear-gradient(135deg,#a1c4fd,#c2e9fb)", high:"linear-gradient(135deg,#b2ebf2,#80deea)", medium:"linear-gradient(135deg,#c3f0f0,#aee1e1)", low:"linear-gradient(135deg,#d0f0f5,#bce4e4)", veryLow:"linear-gradient(135deg,#e0f7fa,#d4f1f2)" }
-};
-
-// 感情スコア計算
-function scoreEmotion(text){
-  const scores={joy:0,anger:0,sad:0,calm:0};
-  for(const emo in emotionWords){
-    for(const level in emotionWords[emo]){
-      const weight={"veryHigh":5,"high":4,"medium":3,"low":2,"veryLow":1}[level];
-      emotionWords[emo][level].forEach(word=>{
-        if(text.includes(word)) scores[emo]+=weight;
-      });
-    }
-  }
-  return scores;
 }
 
-// 感情レベル判定
-function getEmotionLevel(scores){
-  let maxEmotion="neutral", maxScore=0;
-  for(const emo in scores){ if(scores[emo]>maxScore){ maxScore=scores[emo]; maxEmotion=emo; } }
-  let level="medium";
-  if(maxScore>=15) level="veryHigh";
-  else if(maxScore>=10) level="high";
-  else if(maxScore>=5) level="medium";
-  else if(maxScore>=2) level="low";
-  else level="veryLow";
-  return {emotion:maxEmotion, level};
-}
+// 音を鳴らす
+async function playMusic(text, emotion){
+  await audioCtx.resume();
 
-// バー更新
-function updateBars(scores){
-  const max=20; // 仮の最大値
-  ["joy","anger","sad","calm"].forEach(e=>{
-    const pct=Math.min(100,scores[e]/max*100);
-    document.querySelector(`#${e}-bar::after`);
-    const fill = document.querySelector(`#${e}-bar`);
-    fill.style.setProperty("--pct", pct+"%");
-    fill.querySelector("::after");
-    fill.style.setProperty("--pct", pct+"%");
-    fill.querySelector("::after");
-  });
-}
+  let time = audioCtx.currentTime;
 
-// 背景変更
-function changeBackground(emotion, level){
-  document.body.style.background = backgrounds[emotion][level];
-}
+  for(let i=0; i<text.length; i++){
 
-// 曲生成
-function playMusic(text, emotion, level){
-  let time=audioCtx.currentTime;
-  for(let i=0;i<text.length;i++){
-    const osc=audioCtx.createOscillator();
-    const gain=audioCtx.createGain();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
 
-    let baseFreq=220, duration=0.3;
+    let baseFreq = 220;
+    let duration = 0.3;
+
+    // 感情で変化
     switch(emotion){
-      case "joy": baseFreq=300; duration=0.22; if(level==="veryHigh") baseFreq=360; break;
-      case "anger": baseFreq=300; duration=0.2; if(level==="veryHigh") baseFreq=400; break;
-      case "sad": baseFreq=180; duration=0.45; if(level==="veryHigh") baseFreq=150; break;
-      case "calm": baseFreq=220; duration=0.35; if(level==="veryHigh") baseFreq=260; break;
+      case "joy":
+        baseFreq = 400;
+        duration = 0.22;
+        break;
+      case "anger":
+        baseFreq = 350;
+        duration = 0.18;
+        osc.type="sawtooth";
+        break;
+      case "sad":
+        baseFreq = 180;
+        duration = 0.45;
+        break;
+      case "calm":
+        baseFreq = 260;
+        duration = 0.35;
+        break;
     }
 
-    if(highlightEnabled && text.slice(Math.max(0,i-5),i+1).includes("！")){
-      baseFreq+=100;
-      duration*=0.5;
+    // サビ強調（！が近くにあるとき）
+    if(text.slice(Math.max(0,i-3), i+1).includes("！")){
+      baseFreq += 150;
+      duration *= 0.6;
     }
 
-    const note=text.charCodeAt(i)%7;
-    osc.frequency.value = baseFreq * Math.pow(2,note/7);
-    gain.gain.setValueAtTime(0.12,time);
+    const note = text.charCodeAt(i) % 7;
+    osc.frequency.value = baseFreq * Math.pow(2, note/7);
 
-    osc.connect(gain); gain.connect(audioCtx.destination);
-    osc.start(time); osc.stop(time+duration);
+    gain.gain.setValueAtTime(0.15, time);
 
-    // 背景も徐々に変化
-    document.body.style.background = backgrounds[emotion][level];
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
 
-    time+=duration;
+    osc.start(time);
+    osc.stop(time + duration);
+
+    time += duration;
   }
 }
 
-// 作曲
-document.getElementById("compose").addEventListener("click",()=>{
-  const text=document.getElementById("lyrics").value;
-  const scores=scoreEmotion(text);
-  const {emotion, level}=getEmotionLevel(scores);
-  document.getElementById("mood").textContent=
-    emotion==="joy"?"🌈 喜びの曲":
-    emotion==="anger"?"😡 怒りの曲":
-    emotion==="sad"?"😢 哀しい曲":
-    emotion==="calm"?"😌 静かな曲":"😐 普通の曲";
-  changeBackground(emotion,level);
-  playMusic(text,emotion,level);
-});
+// ボタン処理
+document.getElementById("compose").addEventListener("click", async ()=>{
 
-// リセット
-document.getElementById("reset").addEventListener("click",()=>{
-  document.getElementById("lyrics").value="";
-  document.getElementById("mood").textContent="";
-  document.body.style.background="linear-gradient(135deg,#232526,#414345)";
+  const text = document.getElementById("lyrics").value;
+  if(text.length === 0) return;
+
+  const emotion = detectEmotion(text);
+
+  document.getElementById("mood").textContent =
+    emotion==="joy" ? "🌈 喜びの曲" :
+    emotion==="anger" ? "🔥 怒りの曲" :
+    emotion==="sad" ? "🌙 哀の曲" :
+    emotion==="calm" ? "🌊 静かな曲" :
+    "😐 通常モード";
+
+  setBackground(emotion);
+  playMusic(text, emotion);
 });
 </script>
 
