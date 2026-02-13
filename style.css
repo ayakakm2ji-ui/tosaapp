@@ -1,1 +1,101 @@
+// 運勢パターン（5段階）
+const loveFortunes = [
+  { level: "大吉", comment: "運命の出会いが近づいています。自信を持って行動を。" },
+  { level: "中吉", comment: "穏やかな愛に包まれる時期です。" },
+  { level: "小吉", comment: "焦らずゆっくり育てる恋が吉。" },
+  { level: "末吉", comment: "少し慎重に。思いやりを忘れずに。" },
+  { level: "凶", comment: "すれ違い注意。素直さが鍵になります。" }
+];
 
+const workFortunes = [
+  { level: "大吉", comment: "努力が実を結び、大きな成果に。" },
+  { level: "中吉", comment: "周囲との協力で成功。" },
+  { level: "小吉", comment: "堅実に進めば安定します。" },
+  { level: "末吉", comment: "準備期間。焦らないこと。" },
+  { level: "凶", comment: "確認不足に注意。慎重に。" }
+];
+
+// ラッキーアイテム20種
+const luckyItems = [
+  "白いハンカチ","革の手帳","シルバーアクセサリー","青いペン","観葉植物",
+  "香水","ミルクティー","星モチーフ","キャンドル","本",
+  "イヤリング","ネックレス","腕時計","赤いリップ","アロマオイル",
+  "パール小物","トートバッグ","鏡","ブレスレット","コーヒー"
+];
+
+// ひらがなカタカナ → 画数簡易対応
+function kanaStrokeCount(char) {
+  const baseMap = {
+    "あ":3,"い":2,"う":2,"え":3,"お":3,
+    "か":3,"き":4,"く":1,"け":3,"こ":2,
+    "さ":3,"し":1,"す":2,"せ":3,"そ":1,
+    "た":4,"ち":2,"つ":1,"て":1,"と":2,
+    "な":4,"に":3,"ぬ":2,"ね":4,"の":1,
+    "は":3,"ひ":2,"ふ":4,"へ":1,"ほ":4,
+    "ま":3,"み":2,"む":3,"め":2,"も":3,
+    "や":3,"ゆ":2,"よ":2,
+    "ら":2,"り":2,"る":1,"れ":2,"ろ":1,
+    "わ":2,"を":3,"ん":1,
+    "ー":1
+  };
+
+  // カタカナをひらがなに変換
+  char = char.replace(/[\u30a1-\u30f6]/g, ch =>
+    String.fromCharCode(ch.charCodeAt(0) - 0x60)
+  );
+
+  if (char === "゛" || char === "゜") return 1;
+
+  return baseMap[char] || 0;
+}
+
+async function getKanjiStroke(char) {
+  try {
+    const res = await fetch(`https://kanjiapi.dev/v1/kanji/${char}`);
+    const data = await res.json();
+    return data.stroke_count || 0;
+  } catch {
+    return 0;
+  }
+}
+
+async function fortune() {
+  const name = document.getElementById("nameInput").value.trim();
+  if (!name) return;
+
+  let total = 0;
+  let detailHTML = "";
+
+  for (let char of name) {
+    let strokes = 0;
+
+    if (/[一-龯]/.test(char)) {
+      strokes = await getKanjiStroke(char);
+    } else {
+      strokes = kanaStrokeCount(char);
+    }
+
+    total += strokes;
+    detailHTML += `${char}：${strokes}画<br>`;
+  }
+
+  document.getElementById("strokeDetail").innerHTML =
+    `合計：${total}画<br>${detailHTML}`;
+
+  // 画数ベース＋ランダム少し混ぜる
+  const loveIndex = (total + Math.floor(Math.random()*5)) % 5;
+  const workIndex = (total * 2 + Math.floor(Math.random()*5)) % 5;
+
+  const love = loveFortunes[loveIndex];
+  const work = workFortunes[workIndex];
+  const lucky = luckyItems[Math.floor(Math.random()*20)];
+
+  document.getElementById("loveResult").innerHTML =
+    `💖 恋愛運【${love.level}】<br>${love.comment}`;
+
+  document.getElementById("workResult").innerHTML =
+    `💼 仕事運【${work.level}】<br>${work.comment}`;
+
+  document.getElementById("luckyResult").innerHTML =
+    `🍀 ラッキーアイテム<br>${lucky}`;
+}
