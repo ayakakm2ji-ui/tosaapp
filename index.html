@@ -2,94 +2,219 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>標準語→土佐弁 翻訳</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>名前の総画数占い</title>
 <style>
-body{
-  margin:0;
-  height:100vh;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  font-family:sans-serif;
-  background:linear-gradient(135deg,#1e3c72,#2a5298);
-  color:white;
-}
-
-.app{
-  background:rgba(0,0,0,0.4);
-  padding:40px;
-  border-radius:20px;
-  width:500px;
-  text-align:center;
-}
-
-textarea{
-  width:100%;
-  height:120px;
-  padding:10px;
-  border-radius:10px;
-  border:none;
-  font-size:16px;
-  margin-bottom:15px;
-}
-
-button{
-  padding:10px 20px;
-  font-size:16px;
-  border:none;
-  border-radius:10px;
-  cursor:pointer;
-}
-
-#output{
-  margin-top:20px;
-  font-size:18px;
-  background:rgba(255,255,255,0.2);
-  padding:15px;
-  border-radius:10px;
-}
+  body{
+    margin:0;
+    font-family:"Hiragino Sans","Yu Gothic",sans-serif;
+    background:linear-gradient(135deg,#fff0f5,#add8e6);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+  }
+  .card{
+    background:#ffffff;
+    width:92%;
+    max-width:460px;
+    padding:40px;
+    border-radius:24px;
+    box-shadow:0 25px 60px rgba(0,0,0,0.25);
+    text-align:center;
+  }
+  h1{
+    margin:0;
+    font-size:24px;
+    letter-spacing:1px;
+  }
+  .subtitle{
+    color:#777;
+    font-size:14px;
+    margin:10px 0 25px;
+  }
+  input{
+    width:85%;
+    padding:12px;
+    border-radius:12px;
+    border:1px solid #ddd;
+    font-size:16px;
+  }
+  button{
+    margin-top:15px;
+    padding:12px 22px;
+    border:1px solid #4e454a;
+    border-radius:14px;
+    background:#add8e6;
+    color:white;
+    font-size:16px;
+    cursor:pointer;
+    transition:0.3s;
+  }
+  button:hover{
+    background:#a4c1d7;
+  }
+  #result{
+    margin-top:25px;
+    text-align:left;
+    font-size:15px;
+    line-height:1.7;
+  }
+  .box{
+    background:#f5f6ff;
+    padding:12px;
+    border-radius:12px;
+    margin-top:12px;
+  }
+  .total{
+    font-weight:bold;
+    font-size:18px;
+  }
 </style>
 </head>
 <body>
 
-<div class="app">
-  <h2>🌊 標準語 → 土佐弁 翻訳</h2>
-  <textarea id="input" placeholder="標準語を入力してください"></textarea>
-  <button onclick="translateText()">翻訳する</button>
-  <div id="output"></div>
+<div class="card">
+  <h1>名前の総画数占い</h1>
+  <div class="subtitle">あなたの名前の画数を占います。</div>
+
+  <input id="nameInput" placeholder="名前を入力">
+  <br>
+  <button onclick="runFortune()">占う</button>
+
+  <div id="result"></div>
 </div>
 
 <script>
-function translateText(){
-  let text = document.getElementById("input").value;
+// ===== ひらがな基本画数 =====
+const hira={
+"あ":3,"い":2,"う":2,"え":3,"お":3,
+"か":3,"き":4,"く":1,"け":3,"こ":2,
+"さ":3,"し":1,"す":2,"せ":3,"そ":1,
+"た":4,"ち":3,"つ":1,"て":1,"と":2,
+"な":4,"に":3,"ぬ":2,"ね":4,"の":1,
+"は":3,"ひ":2,"ふ":4,"へ":1,"ほ":4,
+"ま":3,"み":2,"む":4,"め":2,"も":3,
+"や":3,"ゆ":2,"よ":2,
+"ら":2,"り":2,"る":1,"れ":2,"ろ":1,
+"わ":2,"を":3,"ん":1,
+"ゃ":3,"ゅ":2,"ょ":2,"っ":1
+};
 
-  const dictionary = {
-    "です": "き",
-    "でした":"やったわ",
-    "面白い":"おもろい",
-    "おもしろい":"おもろい",
-    "だよ": "がよ",
-    "だね": "やね",
-    "している": "しゆう",
-    "してる": "しゆう",
-    "して": "しちょる",
-    "行く": "行くき",
-    "来る": "来るき",
-    "だから": "やき",
-    "とても": "めっちゃ",
-    "本当に": "ほんまに",
-    "ほんとに":"ほんまに",
-    "だ": "や",
-    "ない": "ないき",
-    "か？":"が？",
-    "ダメ":"いかん",
-  };
+// ===== カタカナ基本画数 =====
+const kata={
+"ア":2,"イ":2,"ウ":2,"エ":3,"オ":3,
+"カ":2,"キ":3,"ク":2,"ケ":3,"コ":2,
+"サ":3,"シ":3,"ス":2,"セ":2,"ソ":2,
+"タ":3,"チ":3,"ツ":3,"テ":2,"ト":2,
+"ナ":2,"ニ":2,"ヌ":2,"ネ":4,"ノ":1,
+"ハ":2,"ヒ":2,"フ":1,"ヘ":1,"ホ":4,
+"マ":2,"ミ":3,"ム":2,"メ":2,"モ":3,
+"ヤ":2,"ユ":2,"ヨ":3,
+"ラ":2,"リ":2,"ル":2,"レ":1,"ロ":3,
+"ワ":2,"ヲ":3,"ン":2,
+"ャ":2,"ュ":2,"ョ":3,"ッ":3
+};
 
-  for(const key in dictionary){
-    text = text.split(key).join(dictionary[key]);
+// ===== 漢字API =====
+async function fetchStroke(c){
+  try{
+    const r=await fetch(`https://kanjiapi.dev/v1/kanji/${c}`);
+    if(!r.ok) return null;
+    const d=await r.json();
+    return d.stroke_count;
+  }catch{
+    return null;
+  }
+}
+
+// ===== ラッキーアイテム20 =====
+const luckyItems=[
+"青いハンカチ","お気に入りの本","コーヒー","観葉植物","星モチーフのアクセサリー",
+"手帳","キャンドル","音楽プレイリスト","パールアクセサリー","白いスニーカー",
+"金色の小物","香水","パワーストーン","カフェラテ","腕時計",
+"ミントガム","チョコレート","桜モチーフ","レザー小物","アロマオイル"
+];
+
+// ===== 運勢 =====
+const loveFortunes=[
+{rank:"大吉",text:"運命的な出会いの兆し。素直さが恋を引き寄せる。"},
+{rank:"中吉",text:"ゆっくりと心が近づく時期。焦らず育てて。"},
+{rank:"小吉",text:"身近な縁にヒントあり。笑顔が鍵。"},
+{rank:"末吉",text:"すれ違いに注意。丁寧な言葉を。"},
+{rank:"凶",text:"今は準備期間。自分を整えると好転。"}
+];
+
+const workFortunes=[
+{rank:"大吉",text:"努力が大きく実る時。挑戦が吉。"},
+{rank:"中吉",text:"周囲との協力が成功を呼ぶ。"},
+{rank:"小吉",text:"着実な積み重ねが評価に。"},
+{rank:"末吉",text:"慎重さが鍵。確認を忘れずに。"},
+{rank:"凶",text:"無理は禁物。休息が運気回復の鍵。"}
+];
+
+async function runFortune(){
+  const name=document.getElementById("nameInput").value.trim();
+  const result=document.getElementById("result");
+  if(!name){result.innerHTML="名前を入力してください";return;}
+
+  let total=0;
+
+  for(let c of name){
+
+    if(c==="ー"){ total+=1; continue; }
+
+    if(hira[c]!==undefined){ total+=hira[c]; continue; }
+    if(kata[c]!==undefined){ total+=kata[c]; continue; }
+
+    // 濁点・半濁点処理
+    const normalized=c.normalize("NFD");
+    if(normalized.length===2){
+      const main=normalized[0];
+      const mark=normalized[1];
+
+      if(hira[main]!==undefined){
+        total+=hira[main];
+        if(mark==="゙") total+=2;
+        if(mark==="゚") total+=3;
+        continue;
+      }
+      if(kata[main]!==undefined){
+        total+=kata[main];
+        if(mark==="゙") total+=2;
+        if(mark==="゚") total+=3;
+        continue;
+      }
+    }
+
+    if(c.match(/[\u4E00-\u9FFF]/)){
+      const s=await fetchStroke(c);
+      if(s) total+=s;
+    }
   }
 
-  document.getElementById("output").textContent = text;
+  const loveIndex=(total+Math.floor(Math.random()*5))%5;
+  const workIndex=(total+Math.floor(Math.random()*5))%5;
+  const lucky=luckyItems[Math.floor(Math.random()*20)];
+
+  result.innerHTML=`
+    <div class="total">総画数：${total}画</div>
+
+    <div class="box">
+      <strong>恋愛運：${loveFortunes[loveIndex].rank}</strong><br>
+      ${loveFortunes[loveIndex].text}
+    </div>
+
+    <div class="box">
+      <strong>仕事運：${workFortunes[workIndex].rank}</strong><br>
+      ${workFortunes[workIndex].text}
+    </div>
+
+    <div class="box">
+      <strong>ラッキーアイテム：</strong><br>
+      ${lucky}
+    </div>
+  `;
 }
 </script>
 
